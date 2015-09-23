@@ -32,6 +32,7 @@ function LFRP:new(o)
 
 	o.tTracked = {}
 	o.bLFRP = true
+	o.bDirty = false
 	o.strCharName = ""
 
     return o
@@ -111,6 +112,7 @@ function LFRP:OnMessageReceived(channel, strMessage, idMessage)
 			for this_name, this_tUnitEntry in pairs(self.tTracked) do
 				if strSender == this_name then
 					this_tUnitEntry['bLFRP'] = true
+					self.bDirty = true
 				end
 			end
 		else
@@ -153,7 +155,10 @@ function LFRP:OnChangeWorld()
 end
 
 function LFRP:OnUpdateTimer()
-	self:PopulateRoleplayerList()
+	if self.bDirty then
+		self:PopulateRoleplayerList()
+		self.bDirty = false
+	end
 end
 
 function LFRP:OnNameTimer()
