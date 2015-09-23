@@ -97,7 +97,7 @@ function LFRP:SetupComms()
 end
 
 function LFRP:SendQuery(unit)
-	self.Comm:SendPrivateMessage(unit:GetName(), kEnumLFRP_Query)
+	self.Comm:SendPrivateMessage(unit:GetName(), tostring(kEnumLFRP_Query))
 end
 
 function LFRP:OnMessageReceived(channel, strMessage, idMessage)
