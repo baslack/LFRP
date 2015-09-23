@@ -1,0 +1,185 @@
+commit 4b9f4a5e2a4c666ac81340b22b2ee89492ce8ee0
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Fri Jun 19 10:22:56 2015 +0200
+
+    Update toc.xml
+
+commit b63ab0cf201c1336ff8c2de5308f9c8b89e2e134
+Author: Togglebutton <bpetri20@gmail.com>
+Date:   Mon Jun 15 13:30:04 2015 -0500
+
+    Debugging
+    
+    - Random Bug Fixes
+    - Added Queue Object and methods
+    - Fixed OnRestore bug that was preventing form loading data
+
+commit d83114ad66a447895f8c259df2cafad209f45b3a
+Author: Togglebutton <bpetri20@gmail.com>
+Date:   Thu Jun 11 16:26:36 2015 -0500
+
+    Fixed typos
+
+commit 0877df19514897366ea246a522187602ef3b3ba0
+Author: Togglebutton <bpetri20@gmail.com>
+Date:   Thu Jun 11 02:51:54 2015 -0500
+
+    missed a line
+
+commit f2dac7360553d93e3e00062d1821b9eeb44e8589
+Author: Togglebutton <bpetri20@gmail.com>
+Date:   Thu Jun 11 02:50:57 2015 -0500
+
+    Quick change to Addon
+
+commit 3ed37529e88198c25d0a240f60ad2f143001b86c
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Thu May 14 10:54:30 2015 +0200
+
+    optimized call
+
+commit afa9ca17f2f1850992b17de2f087c2c6dd7fbba6
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Thu May 14 10:38:37 2015 +0200
+
+    fixed typo's in send queue
+
+commit ac95aae31faa4e5b087c662212951534e722534c
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Thu May 14 09:59:49 2015 +0200
+
+    removing IDE files
+
+commit f7a09f0c99f8b89d1321b7a6753aaeedd16b27d9
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Thu May 14 09:58:40 2015 +0200
+
+    removing IDE files
+
+commit 63bd93d65d89aa680f32dab4a0d3554548a83cbf
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Thu May 14 09:57:36 2015 +0200
+
+    Update .gitignore
+    
+    don't need IDE files
+
+commit bf83560f4171701cb081a815cb5cf366aabe668e
+Author: Arne De Herdt <arne.de.herdt@maxdome.de>
+Date:   Wed May 13 11:21:12 2015 +0200
+
+    fixed typo's in the code
+
+commit 86b5904551f9c8bfb0750e687f8cb29f1673b046
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Sun May 10 14:17:48 2015 +0200
+
+    Fixed typo and debugging of code
+
+commit 86b5904551f9c8bfb0750e687f8cb29f1673b046
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Sun May 10 14:17:48 2015 +0200
+
+    Fixed typo and debugging of code
+
+commit 900ac46f4024f13639e67676b4799cb8f30977c9
+Author: Togglebutton <bpetri20@gmail.com>
+Date:   Mon Apr 20 17:16:42 2015 -0500
+
+    Some debug calls
+    
+    some debug calls and removing a needless redundancy that was giving
+    false positive in tests. Also adjusted load order in TOC, just in case.
+
+commit 423fdf07ca60180a9e834858990a26dfbd882fe1
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Sun Apr 19 20:49:36 2015 +0200
+
+    Fixed typo in the code
+
+commit c469d2da8ddddbae16b42f7a9ca79d422d4625d4
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Sun Apr 19 20:45:53 2015 +0200
+
+    lining
+
+commit da70e5ecfcaab4b78b8dbe4538279a3030ff6e44
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Sun Apr 19 20:45:21 2015 +0200
+
+    typo in documentation
+
+commit 167f7e3cd1630e6fcd502151439f1c7d943086fc
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Sun Apr 19 20:40:51 2015 +0200
+
+    Wrote the documentation
+
+commit b022e8349573ef90186cf40952de1c02991700b6
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Sun Apr 19 19:46:12 2015 +0200
+
+    Fixed Timercreation
+    
+    line 743 : Typo
+
+commit 9f1fda3ad5e97073af3537495aa592658d8595de
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Sun Apr 19 19:36:50 2015 +0200
+
+    added toc for test addon
+
+commit fd32e769632efece6a56457449648d7eba98cb9c
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Sun Apr 19 19:25:52 2015 +0200
+
+    Fixed PTR bugs + added test Addon
+
+commit db1bea280e88c7128b9e71306e0862ab7e02d593
+Author: Arne De Herdt <arne.de.herdt@maxdome.de>
+Date:   Thu Apr 16 10:24:55 2015 +0200
+
+    finished rewrite
+
+commit a6b3d4a541b503ca1319671a1a06ccc58c4c70e9
+Author: Togglebutton <bpetri20@gmail.com>
+Date:   Wed Apr 15 20:18:57 2015 -0500
+
+    Package Definition, JSON
+    
+    Added Apollo Package definition
+    Added LibJSON for easy serial / deserial
+
+commit a6b3d4a541b503ca1319671a1a06ccc58c4c70e9
+Author: Togglebutton <bpetri20@gmail.com>
+Date:   Wed Apr 15 20:18:57 2015 -0500
+
+    Package Definition, JSON
+    
+    Added Apollo Package definition
+    Added LibJSON for easy serial / deserial
+
+commit 5e0a618f4b12b4f8ec4f0f0964246bf6b5511e04
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Wed Apr 15 13:43:02 2015 +0200
+
+    Delete org.eclipse.ldt.prefs
+
+commit 35bf35920175f8fc1a52f31dd5e42f4c0861d918
+Author: Arne De Herdt <arne.de.herdt@maxdome.de>
+Date:   Wed Apr 15 13:42:21 2015 +0200
+
+    updated gitignore
+
+commit 6a55f34efca8bb4d2ec3db0805235e52a1511d35
+Author: Arne De Herdt <arne.de.herdt@maxdome.de>
+Date:   Wed Apr 15 13:41:42 2015 +0200
+
+    first part of rewrite
+
+commit bab0c38d7aba885aa0b94fb9a6e6616eeb8ae5f6
+Author: Arne De Herdt <arne.de.herdt@gmail.com>
+Date:   Wed Apr 15 08:58:47 2015 +0200
+
+    Initial commit
+
