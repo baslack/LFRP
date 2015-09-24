@@ -133,6 +133,7 @@ function LFRP:OnUnitCreated(unitCreated)
 		if not (unitCreated:GetName() == self.strCharName) then
 			local tUnitEntry = {}
 			tUnitEntry['unit'] = unitCreated
+			-- setting true will result in assumption of all players as roleplayers
 			tUnitEntry['bLFRP'] = false
 			self.tTracked[unitCreated:GetName()] = tUnitEntry
 			self:SendQuery(unitCreated)
@@ -155,6 +156,8 @@ function LFRP:OnChangeWorld()
 end
 
 function LFRP:OnUpdateTimer()
+	--debug, setting dirty to force true will result in all continual updates
+	--self.bDirty = true
 	if self.bDirty then
 		self:PopulateRoleplayerList()
 		self.bDirty = false
@@ -180,26 +183,62 @@ function LFRP:OnClose( wndHandler, wndControl, eMouseButton )
 end
 
 function LFRP:OnMouseEnter( wndHandler, wndControl, x, y )
-	self.UpdateTimer:Stop()
+	--Print(string.format('Enter %s %s', wndHandler:GetName(), wndControl:GetName()))
+	if wndControl == wndHandler then
+		self.UpdateTimer:Stop()
+	end
 end
 
 function LFRP:OnMouseExit( wndHandler, wndControl, x, y )
-	self.UpdateTimer:Start()
+	--Print(string.format('Exit %s %s', wndHandler:GetName(), wndControl:GetName()))
+	if wndControl == wndHandler then
+		self.UpdateTimer:Start()
+	end
 end
 
 -----------------------------------------------------------------------------------------------
 -- PlayerList Functions
 -----------------------------------------------------------------------------------------------
 
+function LFRP:DistanceToUnit(unit)
+
+	unitPlayer = GameLib.GetPlayerUnit()
+	
+	if not(unitPlayer) then
+		return 0
+	end
+	
+	loc1 = unitPlayer:GetPosition()
+	loc2 = unit:GetPosition()
+	
+	tVec = {}
+	for axis, value in pairs(loc1) do
+		tVec[axis] = loc1[axis] - loc2[axis]
+	end
+	
+	vVec = Vector3.New(tVec['x'], tVec['y'], tVec['z'])
+	return math.floor(vVec:Length())+1
+end
+
 function LFRP:PopulateRoleplayerList()
 	self:DestroyRoleplayerList()
 	
+	--setup for a distance sorting
+	aDist = {}
 	for strName,tUnitEntry in pairs(self.tTracked) do
+		-- only bother if it's a roleplayer
 		if tUnitEntry['bLFRP'] then
-			self:AddPlayerToList(tUnitEntry['unit'])
+			table.insert(aDist, tUnitEntry['unit'])
 		end
 	end
 	
+	--sort by distance
+	table.sort(aDist, function(a,b) return self:DistanceToUnit(a)<self:DistanceToUnit(b) end)
+	
+	--dump to the list
+	for i, unit in ipairs(aDist) do
+		self:AddPlayerToList(unit)
+	end
 	self.wndPlayerList:ArrangeChildrenVert()
 end
 
@@ -207,6 +246,8 @@ function LFRP:AddPlayerToList(unitAdded)
 	btnPlayer = Apollo.LoadForm(self.xmlDoc, 'PlayerLine', self.wndPlayerList, self)
 	btnPlayer:SetText(unitAdded:GetName())
 	btnPlayer:SetData(unitAdded)
+	wndDist = btnPlayer:FindChild('Distance')
+	wndDist:SetText(string.format('%dm', self:DistanceToUnit(unitAdded)))
 end
 
 function LFRP:DestroyRoleplayerList()
