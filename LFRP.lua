@@ -34,6 +34,7 @@ function LFRP:new(o)
 	o.bLFRP = true
 	o.bDirty = false
 	o.strCharName = ""
+	o.bShow = true
 
     return o
 end
@@ -73,13 +74,51 @@ function LFRP:OnDocLoaded()
 		
 		-- item list
 		self.wndPlayerList = self.wndMain:FindChild("PlayerList")
-	    self.wndMain:Show(true)
+	    self.wndMain:Show(self.bShow)
 
 		Apollo.RegisterSlashCommand("lfrp", "ShowLFRP", self)
 		self.UpdateTimer = ApolloTimer.Create(1, true, "OnUpdateTimer", self)
 		self.NameTimer = ApolloTimer.Create(1, true, "OnNameTimer", self)
-		Event_FireGenericEvent("SendVarToRover", "tSomeVariable", Apollo.GetAddon("LFRP"))
+		self.wndMainTimer = ApolloTimer.Create(1, true, "OnwndMainTimer", self)
 	end
+end
+
+-----------------------------------------------------------------------------------------------
+-- LFRP Saved Settings
+-----------------------------------------------------------------------------------------------
+
+function LFRP:OnSave(eLevel)
+	if eLevel ~= GameLib.CodeEnumAddonSaveLevel.Character then
+		return nil
+	end
+	local tSave = {}
+	tSave['bShow'] = self.bShow
+	tSave['bLFRP'] = self.bLFRP
+	tSave['tLoc'] = self.wndMain:GetLocation():ToTable()
+	return tSave
+end
+
+function LFRP:OnRestore(eLevel, tData)
+	if eLevel ~= GameLib.CodeEnumAddonSaveLevel.Character then
+		return nil
+	end
+	if tData ~= nil then
+		self.bShow = tData['bShow']
+		self.bLFRP = tData['bLFRP']
+		self.tLoc = tData['tLoc']
+	end
+end
+
+function LFRP:OnwndMainTimer()
+	if self.wndMain == nil then
+		return
+	elseif self.tLoc ~= nil then
+		self.wndMain:MoveToLocation(WindowLocation.new(self.tLoc))
+		self.wndMainTimer:Stop()
+	else
+		self.wndMainTimer:Stop()
+	end
+	self.wndMain:FindChild('btnLFRP'):SetCheck(self.bLFRP)
 end
 
 -----------------------------------------------------------------------------------------------
@@ -107,7 +146,9 @@ function LFRP:OnMessageReceived(channel, strMessage, idMessage)
 		strSender,mType = string.match(strMessage, strPattern)
 		mType = tonumber(mType)
 		if mType == kEnumLFRP_Query then
-			self.Comm:SendPrivateMessage(strSender,kEnumLFRP_Response)
+			if self.bLFRP then
+				self.Comm:SendPrivateMessage(strSender,kEnumLFRP_Response)
+			end
 		elseif mType == kEnumLFRP_Response then
 			for this_name, this_tUnitEntry in pairs(self.tTracked) do
 				if strSender == this_name then
@@ -125,7 +166,8 @@ end
 function LFRP:ShowLFRP()
 	Print('LFRP:ShowLFRP')
 	self:PopulateRoleplayerList()
-	self.wndMain:Show(true)
+	self.bShow = true
+	self.wndMain:Show(self.bShow)
 end
 
 function LFRP:OnUnitCreated(unitCreated)
@@ -180,6 +222,7 @@ end
 
 function LFRP:OnClose( wndHandler, wndControl, eMouseButton )
 	self.wndMain:Close()
+	self.bShow = false
 end
 
 function LFRP:OnMouseEnter( wndHandler, wndControl, x, y )
@@ -194,6 +237,14 @@ function LFRP:OnMouseExit( wndHandler, wndControl, x, y )
 	if wndControl == wndHandler then
 		self.UpdateTimer:Start()
 	end
+end
+
+function LFRP:OnLFRPCheck( wndHandler, wndControl, eMouseButton )
+	self.bLFRP = true
+end
+
+function LFRP:OnLFRPUncheck( wndHandler, wndControl, eMouseButton )
+	self.bLFRP = false
 end
 
 -----------------------------------------------------------------------------------------------
