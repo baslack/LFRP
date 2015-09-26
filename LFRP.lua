@@ -136,8 +136,20 @@ function LFRP:SetupComms()
 	end
 end
 
+function LFRP:OnMessageSent(channel, eResult, idMessage)
+	Print(string.format('Sent: %s, %s, %s', channel:GetName(), tostring(eResult), tostring(idMessage)))
+end
+
+function LFRP:OnMessageThrottled(channel, strSender, idMessage)
+	Print(string.format('Throttled: %s, %s, %s', channel:GetName(), tostring(eResult), tostring(idMessage)))
+end
+
 function LFRP:SendQuery(unit)
-	self.Comm:SendPrivateMessage(unit:GetName(), tostring(kEnumLFRP_Query))
+	if unit ~= nil then
+		self.Comm:SendPrivateMessage(unit:GetName(), tostring(kEnumLFRP_Query))
+	else
+		return
+	end
 end
 
 function LFRP:OnMessageReceived(channel, strMessage, idMessage)
@@ -167,6 +179,7 @@ function LFRP:ShowLFRP()
 	Print('LFRP:ShowLFRP')
 	self:PopulateRoleplayerList()
 	self.bShow = true
+	self.UpdateTimer:Start()
 	self.wndMain:Show(self.bShow)
 end
 
@@ -223,6 +236,7 @@ end
 function LFRP:OnClose( wndHandler, wndControl, eMouseButton )
 	self.wndMain:Close()
 	self.bShow = false
+	self.UpdateTimer:Stop()
 end
 
 function LFRP:OnMouseEnter( wndHandler, wndControl, x, y )
