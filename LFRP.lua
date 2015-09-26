@@ -137,8 +137,35 @@ function LFRP:SetupComms()
 	self.Comm:SetThrottledFunction("OnMessageThrottled", self)
 end
 
-function LFRP:OnJoinResult(iccomm, eResult)
-
+function LFRP:OnJoinResult(channel, eResult)
+	local bBadName = eResult == ICCommLib.CodeEnumICCommJoinResult.BadName
+	local bJoin = eResult == ICCommLib.CodeEnumICCommJoinResult.Join
+	local bLeft = eResult == ICCommLib.CodeEnumICCommJoinResult.Left
+	local bMissing = eResult == ICCommLib.CodeEnumICCommJoinResult.MissingEntitlement
+	local bNoGroup = eResult == ICCommLib.CodeEnumICCommJoinResult.NoGroup
+	local bNoGuild = eResult == ICCommLib.CodeEnumICCommJoinResult.NoGuild
+	local bTooMany = eResult == ICCommLib.CodeEnumICCommJoinResult.TooManyChannels
+	
+	if bJoin then
+		Print(string.format('LFRP: Joined ICComm Channel "%s"', channel:GetName()))
+		if channel:IsReady() then
+			Print('LFRP: Channel is ready to transmit')
+		else
+			Print('LFRP: Channel is not ready to transmit')
+		end
+	elseif bLeft then
+		Print('LFRP: Left ICComm Channel')
+	elseif bBadName then
+		Print('LFRP: Bad Channel Name')
+	elseif bMissing then
+		Print('LFRP: User doesn\'t have entitlement to job ICComm Channels')
+	elseif bNoGroup then
+		Print('LFRP: Group missing from channel Join attempt')
+	elseif bNoGuil then
+		Print('LFRP: Guild missing from channel Join attempt')
+	else
+		Print('LFRP: Too Many ICComm Channels exist')
+	end
 end
 
 function LFRP:OnMessageSent(channel, eResult, idMessage)
