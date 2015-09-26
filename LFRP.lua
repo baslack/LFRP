@@ -146,20 +146,22 @@ end
 
 function LFRP:SendQuery(unit)
 	if unit ~= nil then
-		self.Comm:SendPrivateMessage(unit:GetName(), tostring(kEnumLFRP_Query))
+		Print(string.format('Sent Query: %s', unit:GetName()))
+		return self.Comm:SendPrivateMessage(unit:GetName(), tostring(kEnumLFRP_Query))
 	else
 		return
 	end
 end
 
 function LFRP:OnMessageReceived(channel, strMessage, idMessage)
+	Print('LFRP: Message Received')
 	if channel == "_LFRP_" then
 		strPattern = '(%a*%s%a*),(%d)'
 		strSender,mType = string.match(strMessage, strPattern)
 		mType = tonumber(mType)
 		if mType == kEnumLFRP_Query then
 			if self.bLFRP then
-				self.Comm:SendPrivateMessage(strSender,kEnumLFRP_Response)
+				self.Comm:SendPrivateMessage(strSender, tostring(kEnumLFRP_Response))
 			end
 		elseif mType == kEnumLFRP_Response then
 			for this_name, this_tUnitEntry in pairs(self.tTracked) do
