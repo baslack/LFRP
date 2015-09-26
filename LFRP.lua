@@ -35,6 +35,8 @@ function LFRP:new(o)
 	o.bDirty = false
 	o.strCharName = ""
 	o.bShow = true
+	o.tMsg = {}
+	o.tThrottled = {}
 
     return o
 end
@@ -80,6 +82,8 @@ function LFRP:OnDocLoaded()
 		self.UpdateTimer = ApolloTimer.Create(1, true, "OnUpdateTimer", self)
 		self.NameTimer = ApolloTimer.Create(1, true, "OnNameTimer", self)
 		self.wndMainTimer = ApolloTimer.Create(1, true, "OnwndMainTimer", self)
+		self.ThrottledTimer = ApolloTimer.Create(3, true, "OnThrottledTimer", self)
+		self.ThrottledTimer:Stop()
 	end
 end
 
@@ -127,53 +131,114 @@ end
 
 function LFRP:SetupComms()
 	self.Comm = ICCommLib.JoinChannel("__LFRP__", ICCommLib.CodeEnumICCommChannelType.Global)
-	if not(self.Comm:IsReady()) then
-		Print("LFRP: Unable to Establish Comm")
-	else
-		self.Comm:SetReceivedMessageFunction("OnMessageReceived")
-		self.Comm:SetSendMessageResultFunction("OnMessageSent")
-		self.Comm:SetThrottledFunction("OnMessageThrottled")
-	end
+	self.Comm:SetJoinResultFunction('OnJoinResult', self)
+	self.Comm:SetReceivedMessageFunction("OnMessageReceived", self)
+	self.Comm:SetSendMessageResultFunction("OnMessageSent", self)
+	self.Comm:SetThrottledFunction("OnMessageThrottled", self)
+end
+
+function LFRP:OnJoinResult(iccomm, eResult)
+
 end
 
 function LFRP:OnMessageSent(channel, eResult, idMessage)
-	Print(string.format('Sent: %s, %s, %s', channel:GetName(), tostring(eResult), tostring(idMessage)))
+	local bInvalid = eResult == ICCommLib.CodeEnumICCommMessageResult.InvalidText
+	local bThrottled = eResult == ICCommLib.CodeEnumICCommMessageResult.Throttled
+	local bMissing = eResult == ICCommLib.CodeEnumICCommMessageResult.MissingEntitlement
+	local bNotIn = eResult == ICCommLib.CodeEnumICCommMessageResult.NotInChannel
+	local bSent = eResult == ICCommLib.CodeEnumICCommMessageResult.Sent
+
+	if bSent then
+		--message was sent, remove it from the list
+		self.tMsg[idMessage] = nil
+		Print(string.format('LFRP: Message Sent, Id# %d', idMessage))
+	elseif bInvalid then
+		-- this one should never happen, but I'm including it for completeness
+		-- and invalid message should never be resent
+		Print(string.format('LFRP: Message Invalid, Id# %d', idMessage))
+		self.tMsg[idMessage] = nil
+	elseif bMissing then
+		-- if the recipient doesn't have rights, we shouldn't bother with a resend
+		Print(string.format('LFRP: Recipient Can Not Receive, Id# %d', idMessage))
+		self.Msg[idMessage] = nil
+	elseif bNotIn then
+		-- if there not in the channel, they're not a LFRP user and they can be removed from tracking
+		Print(string.format('LFRP: Recipient Not In Channel, Id# %d', idMessage))
+		self.tTracked[self.tMsg[idMessage]:GetName()] = nil
+		self.tMsg[idMessage] = nil
+	elseif bThrottled then
+		-- if it's throttled, we need to wait for a bit, then attempt a resend
+		-- we'll let OnMessageThrottled handle that
+		-- move the message to the throttled queue
+		self.tThrottled[idMessage] = self.tMsg[idMessage]
+		self.tMsg = nil
+		Print(string.format('LFRP: Message Throttled, Id# %d', idMessage))
+	else
+		-- if none of those enums is true, something else has gone horribly wrong
+		Print(string.format('LFRP: Unknown Error, Id# %d', idMessage))
+		self.tMsg[idMessage] = nil
+	end
+	-- dump the contents of the event to debug just because
+	Print(string.format('Message Sent Event Dump: %s, %s, %s', channel:GetName(), tostring(eResult), tostring(idMessage)))
 end
 
 function LFRP:OnMessageThrottled(channel, strSender, idMessage)
-	Print(string.format('Throttled: %s, %s, %s', channel:GetName(), tostring(eResult), tostring(idMessage)))
+	--start the throttled timer
+	self.ThrottledTimer:Start()
+end
+
+function LFRP:OnThrottledTimer()
+	-- run through the throttled queue
+	for idMsg,unit in ipairs(self.tThrottled) do
+		-- send a new query to the effected unit
+		self:SendQuery(unit)
+		--clear the unit from the throttled queue
+		self.tThrottled[idMsg] = nil
+	end
+	-- stop the throttled timer again
+	self.ThrottledTimer:Stop()
 end
 
 function LFRP:SendQuery(unit)
-	if unit ~= nil then
-		Print(string.format('Sent Query: %s', unit:GetName()))
-		return self.Comm:SendPrivateMessage(unit:GetName(), tostring(kEnumLFRP_Query))
-	else
-		return
+	local iMsg = 0
+	if (unit ~= nil) and self.Comm:IsReady() then
+		iMsg = self.Comm:SendPrivateMessage(unit:GetName(), tostring(kEnumLFRP_Query))
+		self.tMsg[iMsg] = unit
 	end
 end
 
 function LFRP:OnMessageReceived(channel, strMessage, idMessage)
-	Print(string.format('LFRP: Message Received, %s %s %s', channel, strMessage, idMessage))
-	if channel == "__LFRP__" then
+	-- first check to make sure the message was on LFRP, if it's not ignore it
+	if channel:GetName() == "__LFRP__" then
+		--split out the sender and the receiver
 		strPattern = '(%a*%s%a*),(%d)'
 		strSender,mType = string.match(strMessage, strPattern)
 		mType = tonumber(mType)
+		--dump them both to debug
+		Print(string.format('LFRP: Received from %s, Message: %d', strSender, mType))
+		-- if the message was a query, send back a response to the sender
 		if mType == kEnumLFRP_Query then
+			-- if your LFRP flag is on, send the response
 			if self.bLFRP then
 				self.Comm:SendPrivateMessage(strSender, tostring(kEnumLFRP_Response))
 			end
+		-- if the message is a response, update the tracked user status 
 		elseif mType == kEnumLFRP_Response then
-			for this_name, this_tUnitEntry in pairs(self.tTracked) do
-				if strSender == this_name then
-					this_tUnitEntry['bLFRP'] = true
-					self.bDirty = true
-				end
+			-- if the unit still exists, update it's entry in the tracked table
+			if GameLib.GetPlayerUnitByName(strSender) then
+				self.tTracked[strSender]['bLFRP'] = true
+			else
+				-- if the unit doesn't exist anymore, remove it from the tracked table
+				self.tTracked[strSender] = nil
 			end
+		-- the message was on LFRP, but it's not a query or a response
+		-- flag it to debug
 		else
 			Print('LFRP:UnknownMessage')
 		end
 	end
+	--dump to debug
+	Print(string.format('LFRP: Message Received, %s %s %s', channel:GetName(), strMessage, idMessage))
 end
 
 
