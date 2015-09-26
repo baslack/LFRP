@@ -126,7 +126,7 @@ end
 -----------------------------------------------------------------------------------------------
 
 function LFRP:SetupComms()
-	self.Comm = ICCommLib.JoinChannel("_LFRP_", ICCommLib.CodeEnumICCommChannelType.Global)
+	self.Comm = ICCommLib.JoinChannel("__LFRP__", ICCommLib.CodeEnumICCommChannelType.Global)
 	if not(self.Comm:IsReady()) then
 		Print("LFRP: Unable to Establish Comm")
 	else
@@ -154,8 +154,8 @@ function LFRP:SendQuery(unit)
 end
 
 function LFRP:OnMessageReceived(channel, strMessage, idMessage)
-	Print('LFRP: Message Received')
-	if channel == "_LFRP_" then
+	Print(string.format('LFRP: Message Received, %s %s %s', channel, strMessage, idMessage))
+	if channel == "__LFRP__" then
 		strPattern = '(%a*%s%a*),(%d)'
 		strSender,mType = string.match(strMessage, strPattern)
 		mType = tonumber(mType)
