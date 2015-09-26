@@ -150,8 +150,8 @@ function LFRP:OnMessageSent(channel, eResult, idMessage)
 
 	if bSent then
 		--message was sent, remove it from the list
+		Print(string.format('LFRP: Message Sent, Id# %d, Target: %s', idMessage, self.tMsg[idMessage]:GetName()))
 		self.tMsg[idMessage] = nil
-		Print(string.format('LFRP: Message Sent, Id# %d', idMessage))
 	elseif bInvalid then
 		-- this one should never happen, but I'm including it for completeness
 		-- and invalid message should never be resent
@@ -170,9 +170,9 @@ function LFRP:OnMessageSent(channel, eResult, idMessage)
 		-- if it's throttled, we need to wait for a bit, then attempt a resend
 		-- we'll let OnMessageThrottled handle that
 		-- move the message to the throttled queue
+		Print(string.format('LFRP: Message Throttled, Id# %d', idMessage))
 		self.tThrottled[idMessage] = self.tMsg[idMessage]
 		self.tMsg = nil
-		Print(string.format('LFRP: Message Throttled, Id# %d', idMessage))
 	else
 		-- if none of those enums is true, something else has gone horribly wrong
 		Print(string.format('LFRP: Unknown Error, Id# %d', idMessage))
