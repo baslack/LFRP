@@ -68,7 +68,7 @@ end
 -----------------------------------------------------------------------------------------------
 function LFRP:OnDocLoaded()
 
-	self:SetupComms()
+	--self:SetupComms()
 
 	if self.xmlDoc ~= nil and self.xmlDoc:IsLoaded() then
 	    self.wndMain = Apollo.LoadForm(self.xmlDoc, "LFRPForm", nil, self)
@@ -82,7 +82,10 @@ function LFRP:OnDocLoaded()
 	    self.wndMain:Show(self.bShow)
 
 		Apollo.RegisterSlashCommand("lfrp", "ShowLFRP", self)
+		Apollo.RegisterSlashCommand("lfrp-init", "DoInit", self)
+		
 		self.UpdateTimer = ApolloTimer.Create(1, true, "OnUpdateTimer", self)
+		self.UpdateTimer:Stop()
 		self.NameTimer = ApolloTimer.Create(1, true, "OnNameTimer", self)
 		self.wndMainTimer = ApolloTimer.Create(1, true, "OnwndMainTimer", self)
 		self.ThrottledTimer = ApolloTimer.Create(3, true, "OnThrottledTimer", self)
@@ -93,6 +96,13 @@ end
 -----------------------------------------------------------------------------------------------
 -- LFRP Saved Settings
 -----------------------------------------------------------------------------------------------
+
+function LFRP:DoInit()
+
+	self:SetupComms()
+	self.UpdateTimer:Start()
+
+end
 
 function LFRP:OnSave(eLevel)
 	if eLevel ~= GameLib.CodeEnumAddonSaveLevel.Character then
@@ -134,7 +144,7 @@ end
 
 function LFRP:SetupComms()
 	self.Comm = ICCommLib.JoinChannel(kstrComm, ICCommLib.CodeEnumICCommChannelType.Global)
-	self.Comm:SetJoinResultFunction('OnJoinResult', self)
+	self.Comm:SetJoinResultFunction("OnJoinResult", self)
 	self.Comm:SetReceivedMessageFunction("OnMessageReceived", self)
 	self.Comm:SetSendMessageResultFunction("OnMessageSent", self)
 	self.Comm:SetThrottledFunction("OnMessageThrottled", self)
