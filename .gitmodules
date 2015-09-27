@@ -1,0 +1,3 @@
+[submodule "GeminiLogging"]
+	path = GeminiLogging
+	url = https://github.com/wildstarnasa/GeminiLogging

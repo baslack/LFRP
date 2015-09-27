@@ -262,7 +262,7 @@ function LFRP:OnMessageReceived(channel, strMessage, idMessage)
 		if mType == kEnumLFRP_Query then
 			-- if your LFRP flag is on, send the response
 			if self.bLFRP then
-				self.Comm:SendPrivateMessage(strSender, string.format('%s,%d', unit:GetName(),kEnumLFRP_Response))
+				self.Comm:SendPrivateMessage(strSender, string.format('%s,%d', GameLib.GetPlayerUnit:GetName(), kEnumLFRP_Response))
 			end
 		-- if the message is a response, update the tracked user status 
 		elseif mType == kEnumLFRP_Response then
