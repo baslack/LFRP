@@ -5,6 +5,7 @@
  
 require "Window"
 require "Unit"
+require "ICComm"
 require "ICCommLib"
 require "GameLib"
 
@@ -21,6 +22,7 @@ local Communicator = {}
 
 kEnumLFRP_Query = 1
 kEnumLFRP_Response = 2
+kstrComm = '__LFRP__'
  
 -----------------------------------------------------------------------------------------------
 -- Initialization
@@ -56,7 +58,6 @@ function LFRP:OnLoad()
     -- load our form file
 	self.xmlDoc = XmlDoc.CreateFromFile("LFRP.xml")
 	self.xmlDoc:RegisterCallback("OnDocLoaded", self)
-	self:SetupComms()
 	Apollo.RegisterEventHandler("UnitCreated", "OnUnitCreated", self)
 	Apollo.RegisterEventHandler("UnitDestroyed", "OnUnitDestroyed", self)
 	Apollo.RegisterEventHandler("ChangeWorld", "OnChangeWorld", self)
@@ -66,6 +67,8 @@ end
 -- LFRP OnDocLoaded
 -----------------------------------------------------------------------------------------------
 function LFRP:OnDocLoaded()
+
+	self:SetupComms()
 
 	if self.xmlDoc ~= nil and self.xmlDoc:IsLoaded() then
 	    self.wndMain = Apollo.LoadForm(self.xmlDoc, "LFRPForm", nil, self)
@@ -130,7 +133,7 @@ end
 -----------------------------------------------------------------------------------------------
 
 function LFRP:SetupComms()
-	self.Comm = ICCommLib.JoinChannel("__LFRP__", ICCommLib.CodeEnumICCommChannelType.Global)
+	self.Comm = ICCommLib.JoinChannel(kstrComm, ICCommLib.CodeEnumICCommChannelType.Global)
 	self.Comm:SetJoinResultFunction('OnJoinResult', self)
 	self.Comm:SetReceivedMessageFunction("OnMessageReceived", self)
 	self.Comm:SetSendMessageResultFunction("OnMessageSent", self)
@@ -231,12 +234,13 @@ function LFRP:SendQuery(unit)
 	if (unit ~= nil) and self.Comm:IsReady() then
 		iMsg = self.Comm:SendPrivateMessage(unit:GetName(), tostring(kEnumLFRP_Query))
 		self.tMsg[iMsg] = unit
+		self.tTracked[unit:GetName()]['bQuerySent'] = true
 	end
 end
 
 function LFRP:OnMessageReceived(channel, strMessage, idMessage)
 	-- first check to make sure the message was on LFRP, if it's not ignore it
-	if channel:GetName() == "__LFRP__" then
+	if channel:GetName() == kstrComm then
 		--split out the sender and the receiver
 		strPattern = '(%a*%s%a*),(%d)'
 		strSender,mType = string.match(strMessage, strPattern)
@@ -265,7 +269,7 @@ function LFRP:OnMessageReceived(channel, strMessage, idMessage)
 		end
 	end
 	--dump to debug
-	Print(string.format('LFRP: Message Received, %s %s %s', channel:GetName(), strMessage, idMessage))
+	Print(string.format('LFRP: Message Received, %s %s %d', channel:GetName(), strMessage, idMessage))
 end
 
 
@@ -282,10 +286,20 @@ function LFRP:OnUnitCreated(unitCreated)
 		if not (unitCreated:GetName() == self.strCharName) then
 			local tUnitEntry = {}
 			tUnitEntry['unit'] = unitCreated
+			
 			-- setting true will result in assumption of all players as roleplayers
 			tUnitEntry['bLFRP'] = false
+			
+			-- set query state to false, no query sent yet
+			tUnitEntry['bQuerySent'] = false
+
 			self.tTracked[unitCreated:GetName()] = tUnitEntry
-			self:SendQuery(unitCreated)
+			
+			-- anytime a new unit gets added to tracked, set the tracked table to dirty
+			self.bDirty = true
+			
+			--moving this out so that the early calling unit created events are dependent on ICComm being loaded
+			--self:SendQuery(unitCreated)
 			--Print(string.format('LFRP: %s, UnitCreated', unitCreated:GetName()))
 		end
 	end
@@ -308,6 +322,12 @@ function LFRP:OnUpdateTimer()
 	--debug, setting dirty to force true will result in all continual updates
 	--self.bDirty = true
 	if self.bDirty then
+		-- set querys to all the tracked units
+		for strName, tUnitEntry in pairs(self.tTracked) do
+			if not tUnitEntry['bQuerySent'] then
+				self:SendQuery(tUnitEntry['unit'])
+			end
+		end
 		self:PopulateRoleplayerList()
 		self.bDirty = false
 	end
