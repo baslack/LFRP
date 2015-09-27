@@ -57,7 +57,7 @@ end
 function LFRP:OnLoad()
 	--setup logger
 	local GeminiLogging = Apollo.GetPackage("Gemini:Logging-1.2").tPackage
-    self.glog = GeminiLogging:GetLogger({
+    --self.glog = GeminiLogging:GetLogger({
 		level = GeminiLogging.DEBUG,
 		pattern = "%d %n %c %l - %m",
 		appender = "GeminiConsole"
@@ -82,7 +82,7 @@ function LFRP:OnDocLoaded()
 	    self.wndMain = Apollo.LoadForm(self.xmlDoc, "LFRPForm", nil, self)
 		if self.wndMain == nil then
 			Apollo.AddAddonErrorText(self, "Could not load the main window for some reason.")
-			self.glog:fatal('LFRP: Could not load main window.')
+			--self.glog:fatal('LFRP: Could not load main window.')
 			return
 		end
 		
@@ -99,7 +99,7 @@ function LFRP:OnDocLoaded()
 		self.wndMainTimer = ApolloTimer.Create(1, true, "OnwndMainTimer", self)
 		self.ThrottledTimer = ApolloTimer.Create(3, true, "OnThrottledTimer", self)
 		self.ThrottledTimer:Stop()
-		self.DelayedStart = ApolloTimer.Create(3, true, "OnDelayedStart", self)
+		self.DelayedStart = ApolloTimer.Create(5, true, "OnDelayedStart", self)
 	end
 end
 
@@ -176,24 +176,26 @@ function LFRP:OnJoinResult(channel, eResult)
 	local bTooMany = eResult == ICCommLib.CodeEnumICCommJoinResult.TooManyChannels
 	
 	if bJoin then
-		self.glog:debug(string.format('LFRP: Joined ICComm Channel "%s"', channel:GetName()))
+		--self.glog:debug(string.format('LFRP: Joined ICComm Channel "%s"', channel:GetName()))
 		if channel:IsReady() then
-			self.glog:debug('LFRP: Channel is ready to transmit')
+			--self.glog:debug('LFRP: Channel is ready to transmit')
 		else
-			self.glog:debug('LFRP: Channel is not ready to transmit')
+			--self.glog:debug('LFRP: Channel is not ready to transmit')
 		end
 	elseif bLeft then
-		self.glog:debug('LFRP: Left ICComm Channel')
+		--self.glog:debug('LFRP: Left ICComm Channel')
 	elseif bBadName then
-		self.glog:fatal('LFRP: Bad Channel Name')
+		--self.glog:fatal('LFRP: Bad Channel Name')
 	elseif bMissing then
-		self.glog:fatal('LFRP: User doesn\'t have entitlement to job ICComm Channels')
+		--self.glog:fatal('LFRP: User doesn\'t have entitlement to job ICComm Channels')
 	elseif bNoGroup then
-		self.glog:fatal('LFRP: Group missing from channel Join attempt')
-	elseif bNoGuil then
-		self.glog:fatal('LFRP: Guild missing from channel Join attempt')
+		--self.glog:fatal('LFRP: Group missing from channel Join attempt')
+	elseif bNoGuild then
+		--self.glog:fatal('LFRP: Guild missing from channel Join attempt')
+	elseif bTooMany then
+		--self.glog:fatal('LFRP: Too Many ICComm Channels exist')
 	else
-		self.glog:fatal('LFRP: Too Many ICComm Channels exist')
+		--self.glog:info('LFRP: Join Result didn\'t match any of the Enum.')
 	end
 end
 
@@ -206,36 +208,36 @@ function LFRP:OnMessageSent(channel, eResult, idMessage)
 
 	if bSent then
 		--message was sent, remove it from the list
-		self.glog:debug(string.format('LFRP: Message Sent, Id# %d, Target: %s', idMessage, self.tMsg[idMessage]:GetName()))
+		--self.glog:debug(string.format('LFRP: Message Sent, Id# %d, Target: %s', idMessage, self.tMsg[idMessage]:GetName()))
 		self.tMsg[idMessage] = nil
 	elseif bInvalid then
 		-- this one should never happen, but I'm including it for completeness
 		-- and invalid message should never be resent
-		self.glog:warn(string.format('LFRP: Message Invalid, Id# %d', idMessage))
+		--self.glog:warn(string.format('LFRP: Message Invalid, Id# %d', idMessage))
 		self.tMsg[idMessage] = nil
 	elseif bMissing then
 		-- if the recipient doesn't have rights, we shouldn't bother with a resend
-		self.glog:warn(string.format('LFRP: Recipient Can Not Receive, Id# %d', idMessage))
+		--self.glog:warn(string.format('LFRP: Recipient Can Not Receive, Id# %d', idMessage))
 		self.Msg[idMessage] = nil
 	elseif bNotIn then
 		-- if there not in the channel, they're not a LFRP user and they can be removed from tracking
-		self.glog:warn(string.format('LFRP: Recipient Not In Channel, Id# %d', idMessage))
+		--self.glog:warn(string.format('LFRP: Recipient Not In Channel, Id# %d', idMessage))
 		self.tTracked[self.tMsg[idMessage]:GetName()] = nil
 		self.tMsg[idMessage] = nil
 	elseif bThrottled then
 		-- if it's throttled, we need to wait for a bit, then attempt a resend
 		-- we'll let OnMessageThrottled handle that
 		-- move the message to the throttled queue
-		self.glog:info(string.format('LFRP: Message Throttled, Id# %d', idMessage))
+		--self.glog:info(string.format('LFRP: Message Throttled, Id# %d', idMessage))
 		self.tThrottled[idMessage] = self.tMsg[idMessage]
 		self.tMsg = nil
 	else
 		-- if none of those enums is true, something else has gone horribly wrong
-		self.glog:warn(string.format('LFRP: Unknown Error, Id# %d', idMessage))
+		--self.glog:warn(string.format('LFRP: Unknown Error, Id# %d', idMessage))
 		self.tMsg[idMessage] = nil
 	end
 	-- dump the contents of the event to debug just because
-	self.glog:debug(string.format('Message Sent Event Dump: %s, %s, %s', channel:GetName(), tostring(eResult), tostring(idMessage)))
+	--self.glog:debug(string.format('Message Sent Event Dump: %s, %s, %s', channel:GetName(), tostring(eResult), tostring(idMessage)))
 end
 
 function LFRP:OnMessageThrottled(channel, strSender, idMessage)
@@ -276,18 +278,20 @@ function LFRP:OnMessageReceived(channel, strMessage, strSender)
 		]]--
 		mType = tonumber(strMessage)
 		--dump them both to debug
-		self.glog:debug(string.format('LFRP: Received from %s, Message: %d', strSender, mType))
+		--self.glog:debug(string.format('LFRP: Received from %s, Message: %d', strSender, mType))
 		-- if the message was a query, send back a response to the sender
 		if mType == kEnumLFRP_Query then
 			-- if your LFRP flag is on, send the response
 			if self.bLFRP then
-				self.Comm:SendPrivateMessage(strSender, kEnumLFRP_Response)
+				idMessage = self.Comm:SendPrivateMessage(strSender, kEnumLFRP_Response)
+				self.tMsg[idMessage] = GameLib.GetPlayerUnitByName(strSender)
 			end
 		-- if the message is a response, update the tracked user status 
 		elseif mType == kEnumLFRP_Response then
 			-- if the unit still exists, update it's entry in the tracked table
 			if GameLib.GetPlayerUnitByName(strSender) then
 				self.tTracked[strSender]['bLFRP'] = true
+				self.bDirty = true
 			else
 				-- if the unit doesn't exist anymore, remove it from the tracked table
 				self.tTracked[strSender] = nil
@@ -295,16 +299,16 @@ function LFRP:OnMessageReceived(channel, strMessage, strSender)
 		-- the message was on LFRP, but it's not a query or a response
 		-- flag it to debug
 		else
-			self.glog:warn('LFRP:UnknownMessage')
+			--self.glog:warn('LFRP:UnknownMessage')
 		end
 	end
 	--dump to debug
-	self.glog:debug(string.format('LFRP: Message Received, %s %s %s', channel:GetName(), strMessage, strSender))
+	--self.glog:debug(string.format('LFRP: Message Received, %s %s %s', channel:GetName(), strMessage, strSender))
 end
 
 
 function LFRP:ShowLFRP()
-	self.glog:debug('LFRP:ShowLFRP')
+	--self.glog:debug('LFRP:ShowLFRP')
 	self:PopulateRoleplayerList()
 	self.bShow = true
 	self.UpdateTimer:Start()
@@ -330,7 +334,7 @@ function LFRP:OnUnitCreated(unitCreated)
 			
 			--moving this out so that the early calling unit created events are dependent on ICComm being loaded
 			--self:SendQuery(unitCreated)
-			self.glog:info(string.format('LFRP: %s, UnitCreated', unitCreated:GetName()))
+			--self.glog:info(string.format('LFRP: %s, UnitCreated', unitCreated:GetName()))
 		end
 	end
 end
@@ -339,7 +343,7 @@ function LFRP:OnUnitDestroyed(unitDestroyed)
 	for this_name, this_unit in pairs(self.tTracked) do
 		if unitDestroyed:GetName() == this_name then
 			self.tTracked[this_name] = nil
-			self.glog:info(string.format('LFRP: %s, UnitDestroyed', unitDestroyed:GetName()))
+			--self.glog:info(string.format('LFRP: %s, UnitDestroyed', unitDestroyed:GetName()))
 		end
 	end
 end
@@ -347,7 +351,7 @@ end
 function LFRP:OnChangeWorld()
 	-- clear the tracked units
 	self.tTracked = {}
-	self.glog:info('LFRP: Changed World')
+	--self.glog:info('LFRP: Changed World')
 end
 
 function LFRP:OnUpdateTimer()
@@ -386,14 +390,14 @@ function LFRP:OnClose( wndHandler, wndControl, eMouseButton )
 end
 
 function LFRP:OnMouseEnter( wndHandler, wndControl, x, y )
-	self.glog:info(string.format('LFRP: Mouse Entered Window %s %s', wndHandler:GetName(), wndControl:GetName()))
+	--self.glog:info(string.format('LFRP: Mouse Entered Window %s %s', wndHandler:GetName(), wndControl:GetName()))
 	if wndControl == wndHandler then
 		self.UpdateTimer:Stop()
 	end
 end
 
 function LFRP:OnMouseExit( wndHandler, wndControl, x, y )
-	self.glog:info(string.format('LFRP: Mouse Exited Window %s %s', wndHandler:GetName(), wndControl:GetName()))
+	--self.glog:info(string.format('LFRP: Mouse Exited Window %s %s', wndHandler:GetName(), wndControl:GetName()))
 	if wndControl == wndHandler then
 		self.UpdateTimer:Start()
 	end
