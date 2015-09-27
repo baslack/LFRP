@@ -242,7 +242,7 @@ end
 function LFRP:SendQuery(unit)
 	local iMsg = 0
 	if (unit ~= nil) and self.Comm:IsReady() then
-		iMsg = self.Comm:SendPrivateMessage(unit:GetName(), tostring(kEnumLFRP_Query))
+		iMsg = self.Comm:SendPrivateMessage(unit:GetName(), string.format('%s,%d', unit:GetName(),kEnumLFRP_Query))
 		self.tMsg[iMsg] = unit
 		self.tTracked[unit:GetName()]['bQuerySent'] = true
 	end
@@ -257,11 +257,12 @@ function LFRP:OnMessageReceived(channel, strMessage, idMessage)
 		mType = tonumber(mType)
 		--dump them both to debug
 		Print(string.format('LFRP: Received from %s, Message: %d', strSender, mType))
+		Print(string.format('LFRP: Received %s', strMessage))
 		-- if the message was a query, send back a response to the sender
 		if mType == kEnumLFRP_Query then
 			-- if your LFRP flag is on, send the response
 			if self.bLFRP then
-				self.Comm:SendPrivateMessage(strSender, tostring(kEnumLFRP_Response))
+				self.Comm:SendPrivateMessage(strSender, string.format('%s,%d', unit:GetName(),kEnumLFRP_Response))
 			end
 		-- if the message is a response, update the tracked user status 
 		elseif mType == kEnumLFRP_Response then
