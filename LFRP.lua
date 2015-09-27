@@ -34,7 +34,7 @@ function LFRP:new(o)
 
 	o.tTracked = {}
 	o.bLFRP = true
-	o.bDirty = false
+	--o.bDirty = false
 	o.strCharName = ""
 	o.bShow = true
 	o.tMsg = {}
@@ -59,7 +59,7 @@ function LFRP:OnLoad()
 	local GeminiLogging = Apollo.GetPackage("Gemini:Logging-1.2").tPackage
     
 	self.glog = GeminiLogging:GetLogger({
-		level = GeminiLogging.DEBUG,
+		level = GeminiLogging.FATAL,
 		pattern = "%d %n %c %l - %m",
 		appender = "GeminiConsole"
 	})
@@ -92,7 +92,7 @@ function LFRP:OnDocLoaded()
 		Apollo.RegisterSlashCommand("lfrp", "ShowLFRP", self)
 		Apollo.RegisterSlashCommand("lfrp-init", "DoInit", self)
 		
-		self.UpdateTimer = ApolloTimer.Create(1, true, "OnUpdateTimer", self)
+		self.UpdateTimer = ApolloTimer.Create(3, true, "OnUpdateTimer", self)
 		self.UpdateTimer:Stop()
 		self.NameTimer = ApolloTimer.Create(1, true, "OnNameTimer", self)
 		self.wndMainTimer = ApolloTimer.Create(1, true, "OnwndMainTimer", self)
@@ -290,7 +290,7 @@ function LFRP:OnMessageReceived(channel, strMessage, strSender)
 			-- if the unit still exists, update it's entry in the tracked table
 			if GameLib.GetPlayerUnitByName(strSender) then
 				self.tTracked[strSender]['bLFRP'] = true
-				self.bDirty = true
+				--self.bDirty = true
 			else
 				-- if the unit doesn't exist anymore, remove it from the tracked table
 				self.tTracked[strSender] = nil
@@ -329,7 +329,7 @@ function LFRP:OnUnitCreated(unitCreated)
 			self.tTracked[unitCreated:GetName()] = tUnitEntry
 			
 			-- anytime a new unit gets added to tracked, set the tracked table to dirty
-			self.bDirty = true
+			--self.bDirty = true
 			
 			--moving this out so that the early calling unit created events are dependent on ICComm being loaded
 			--self:SendQuery(unitCreated)
@@ -342,6 +342,7 @@ function LFRP:OnUnitDestroyed(unitDestroyed)
 	for this_name, this_unit in pairs(self.tTracked) do
 		if unitDestroyed:GetName() == this_name then
 			self.tTracked[this_name] = nil
+			--self.bDirty = true
 			self.glog:info(string.format('LFRP: %s, UnitDestroyed', unitDestroyed:GetName()))
 		end
 	end
@@ -354,17 +355,13 @@ function LFRP:OnChangeWorld()
 end
 
 function LFRP:OnUpdateTimer()
-	--debug, setting dirty to force true will result in all continual updates
-	--self.bDirty = true
-	if self.bDirty then
-		-- set querys to all the tracked units
+	if self.bShow then
 		for strName, tUnitEntry in pairs(self.tTracked) do
 			if not tUnitEntry['bQuerySent'] then
 				self:SendQuery(tUnitEntry['unit'])
 			end
 		end
 		self:PopulateRoleplayerList()
-		self.bDirty = false
 	end
 end
 
@@ -442,7 +439,10 @@ function LFRP:PopulateRoleplayerList()
 	for strName,tUnitEntry in pairs(self.tTracked) do
 		-- only bother if it's a roleplayer
 		if tUnitEntry['bLFRP'] then
-			table.insert(aDist, tUnitEntry['unit'])
+			if GameLib.GetPlayerUnitByName(strName)then
+				--changed to get a fresh unit for distance update
+				table.insert(aDist, GameLib.GetPlayerUnitByName(strName))
+			end
 		end
 	end
 	
