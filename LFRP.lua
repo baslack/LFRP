@@ -229,7 +229,7 @@ function LFRP:OnMessageSent(channel, eResult, idMessage)
 		-- move the message to the throttled queue
 		self.glog:info(string.format('LFRP: Message Throttled, Id# %d', idMessage))
 		self.tThrottled[idMessage] = self.tMsg[idMessage]
-		self.tMsg = nil
+		self.tMsg[idMessage] = nil
 	else
 		-- if none of those enums is true, something else has gone horribly wrong
 		self.glog:warn(string.format('LFRP: Unknown Error, Id# %d', idMessage))
