@@ -207,7 +207,9 @@ function LFRP:OnMessageSent(channel, eResult, idMessage)
 
 	if bSent then
 		--message was sent, remove it from the list
-		self.glog:debug(string.format('LFRP: Message Sent, Id# %d, Target: %s', idMessage, self.tMsg[idMessage]:GetName()))
+		if self.tMsg[idMessage] ~= nil then
+			self.glog:debug(string.format('LFRP: Message Sent, Id# %d, Target: %s', idMessage, self.tMsg[idMessage]:GetName()))
+		end
 		self.tMsg[idMessage] = nil
 	elseif bInvalid then
 		-- this one should never happen, but I'm including it for completeness
