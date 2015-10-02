@@ -46,7 +46,9 @@ end
 function LFRP:Init()
 	local bHasConfigureFunction = false
 	local strConfigureButtonText = ""
-	local tDependencies = {}
+	local tDependencies = {
+		"Gemini:Logging-1.2",
+	}
     Apollo.RegisterAddon(self, bHasConfigureFunction, strConfigureButtonText, tDependencies)
 end
  
