@@ -358,6 +358,43 @@ function LFRP:OnChangeWorld()
 	self.glog:info('LFRP: Changed World')
 end
 
+function LFRP:PollRPChannels()
+	local channels = ChatSystemLib.GetChannels()
+	local arInteresting_channels = {}
+	local pattern = '.*RP.*'
+	
+	-- if a channel as "RP" in its name,
+	-- add it to the interesting channels list
+	
+	for i,this_chan in ipairs(channels) do
+		if string.find(this_chan:GetName(), pattern) then
+			table.insert(arInteresting_channels, this_chan)
+		end
+	end
+	
+	-- for each channel in the interesting channels list
+	for i, this_chan in ipairs(arInteresting_channels) do
+		self.glog:debug(string.format('PollRPChannels: %s', this_chan:GetName()))
+		-- poll for members
+		local members = this_chan:GetMembers()
+		-- for each member
+		for j, this_member in ipairs(members) do
+			self.glog:debug(string.format('PollRPChannels: %s', this_member['strCharacterName']))
+			-- check to see if their unit exists in the players space
+			if GameLib:GetPlayerUnitByName(this_member['strCharacterName']) ~= nil then
+				--check to see if it's already tracked
+				--if it isn't, track it
+				if self.tTracked[this_member['strCharacterName']] == nil then
+					self.glog:debug('PollRPChannels: Now tracking this character.')
+					self.tTracked[this_member['strCharacterName']] = {}
+					self.tTracked[this_member['strCharacterName']]['bLFRP'] = true
+					self.tTracked[this_member['strCharacterName']]['unit'] = GameLib:GetPlayerUnitByName(this_member['strCharacterName'])
+				end
+			end
+		end
+	end
+end
+
 function LFRP:OnUpdateTimer()
 	if self.bShow then
 		for strName, tUnitEntry in pairs(self.tTracked) do
@@ -365,6 +402,7 @@ function LFRP:OnUpdateTimer()
 				self:SendQuery(tUnitEntry['unit'])
 			end
 		end
+		self:PollRPChannels()
 		self:PopulateRoleplayerList()
 	end
 end
