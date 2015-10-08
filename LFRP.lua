@@ -101,6 +101,9 @@ function LFRP:OnDocLoaded()
 		self.ThrottledTimer = ApolloTimer.Create(3, true, "OnThrottledTimer", self)
 		self.ThrottledTimer:Stop()
 		self.DelayedStart = ApolloTimer.Create(5, true, "OnDelayedStart", self)
+		self.PollingTimer = ApolloTimer.Create(10, true, "OnPollingTimer", self)
+		self.ReEnableTimer = ApolloTimer.Create(1, true, "OnReEnableTimer", self)
+		self.ReEnableTimer:Stop()
 	end
 end
 
@@ -359,15 +362,31 @@ function LFRP:OnChangeWorld()
 end
 
 function LFRP:PollRPChannels()
+	self.glog:debug("PollRPChannels: Ran.")
 	local channels = ChatSystemLib.GetChannels()
 	local arInteresting_channels = {}
 	local pattern = '.*RP.*'
+
+
+	--have to do this to hide the requests
+	--Get Members doesn't work without a request first
+	--disabling command channel display, temporarily
+	local ChatLog = Apollo.GetAddon("ChatLog")
+	local bRestore = {}
+	for i, this_wnd in ipairs(ChatLog.tChatWindows) do
+		local tData = this_wnd:GetData()
+		bRestore[i] = tData.tViewedChannels[1]
+		tData.tViewedChannels[1] = false
+		this_wnd:SetData(tData)
+	end
 	
 	-- if a channel as "RP" in its name,
 	-- add it to the interesting channels list
 	
 	for i,this_chan in ipairs(channels) do
+		self.glog:debug(string.format("PollRPChannels: Checking %s", this_chan:GetName()))
 		if string.find(this_chan:GetName(), pattern) then
+			self.glog:debug("PollRPChannels: RP Channel Found.")
 			table.insert(arInteresting_channels, this_chan)
 		end
 	end
@@ -376,23 +395,40 @@ function LFRP:PollRPChannels()
 	for i, this_chan in ipairs(arInteresting_channels) do
 		self.glog:debug(string.format('PollRPChannels: %s', this_chan:GetName()))
 		-- poll for members
+		this_chan:RequestMembers()
 		local members = this_chan:GetMembers()
 		-- for each member
 		for j, this_member in ipairs(members) do
-			self.glog:debug(string.format('PollRPChannels: %s', this_member['strCharacterName']))
+			local strName = this_member['strMemberName']
+			self.glog:debug(string.format('PollRPChannels: %s', strName))
 			-- check to see if their unit exists in the players space
-			if GameLib:GetPlayerUnitByName(this_member['strCharacterName']) ~= nil then
+			if (GameLib.GetPlayerUnitByName(strName) ~= nil) and (strName ~= GameLib.GetPlayerUnit():GetName()) then
 				--check to see if it's already tracked
 				--if it isn't, track it
-				if self.tTracked[this_member['strCharacterName']] == nil then
-					self.glog:debug('PollRPChannels: Now tracking this character.')
-					self.tTracked[this_member['strCharacterName']] = {}
-					self.tTracked[this_member['strCharacterName']]['bLFRP'] = true
-					self.tTracked[this_member['strCharacterName']]['unit'] = GameLib:GetPlayerUnitByName(this_member['strCharacterName'])
-				end
+				self.glog:debug('PollRPChannels: Now tracking this character.')
+				self.tTracked[strName] = {}
+				self.tTracked[strName]['bLFRP'] = true
+				self.tTracked[strName]['unit'] = GameLib.GetPlayerUnitByName(strName)
 			end
 		end
 	end
+	
+	return bRestore
+end
+
+function LFRP:OnPollingTimer()
+	self.bRestore = self:PollRPChannels()
+	self.ReEnableTimer:Start()
+end
+
+function LFRP:OnReEnableTimer()
+	ChatLog = Apollo.GetAddon("ChatLog")
+	for i, this_wnd in ipairs(ChatLog.tChatWindows) do
+		local tData = this_wnd:GetData()
+		tData.tViewedChannels[1] = self.bRestore[i]
+		this_wnd:SetData(tData)
+	end
+	self.ReEnableTimer:Stop()
 end
 
 function LFRP:OnUpdateTimer()
@@ -402,7 +438,6 @@ function LFRP:OnUpdateTimer()
 				self:SendQuery(tUnitEntry['unit'])
 			end
 		end
-		self:PollRPChannels()
 		self:PopulateRoleplayerList()
 	end
 end
