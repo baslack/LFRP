@@ -22,7 +22,11 @@ local Communicator = {}
 
 kEnumLFRP_Query = 1
 kEnumLFRP_Response = 2
+kEnumLFRP_OptOut = 3
 kstrComm = '__LFRP__'
+
+local Major, Minor, Patch, Suffix = 1, 1, 1, 0
+local YOURADDON_CURRENT_VERSION = string.format("%d.%d.%d", Major, Minor, Patch)
  
 -----------------------------------------------------------------------------------------------
 -- Initialization
@@ -72,6 +76,7 @@ function LFRP:OnLoad()
 	Apollo.RegisterEventHandler("UnitCreated", "OnUnitCreated", self)
 	Apollo.RegisterEventHandler("UnitDestroyed", "OnUnitDestroyed", self)
 	Apollo.RegisterEventHandler("ChangeWorld", "OnChangeWorld", self)
+	Apollo.RegisterEventHandler("InterfaceMenuListHasLoaded", "OnInterfaceMenuListHasLoaded", self)
 end
 
 -----------------------------------------------------------------------------------------------
@@ -105,6 +110,14 @@ function LFRP:OnDocLoaded()
 		self.ReEnableTimer = ApolloTimer.Create(1, true, "OnReEnableTimer", self)
 		self.ReEnableTimer:Stop()
 	end
+end
+
+-----------------------------------------------------------------------------------------------
+-- LFRP OnInterfaceMenuListHasLoaded
+-----------------------------------------------------------------------------------------------
+
+function LFRP:OnInterfaceMenuListHasLoaded()
+	Event_FireGenericEvent("OneVersion_ReportAddonInfo", "LFRP", Major, Minor, Patch)
 end
 
 -----------------------------------------------------------------------------------------------
@@ -291,15 +304,28 @@ function LFRP:OnMessageReceived(channel, strMessage, strSender)
 			if self.bLFRP then
 				idMessage = self.Comm:SendPrivateMessage(strSender, kEnumLFRP_Response)
 				self.tMsg[idMessage] = GameLib.GetPlayerUnitByName(strSender)
+			else
+				idMessage = self.Comm:SendPrivateMessage(strSender, kEnumLFRP_OptOut)
+				self.tMsg[idMessage] = GameLib.GetPlayerUnitByName(strSender)
 			end
 		-- if the message is a response, update the tracked user status 
 		elseif mType == kEnumLFRP_Response then
 			-- if the unit still exists, update it's entry in the tracked table
 			if GameLib.GetPlayerUnitByName(strSender) then
 				self.tTracked[strSender]['bLFRP'] = true
+				-- if they responded with this code, they want to be found
+				self.tTracked[strSender]['bOptOut'] = nil
 				--self.bDirty = true
 			else
 				-- if the unit doesn't exist anymore, remove it from the tracked table
+				self.tTracked[strSender] = nil
+			end
+		-- if the player is opting out, the channel search will still have found them, this will
+		-- flag them to not be added to the listing
+		elseif mType == kEnumLFRP_OptOut then
+			if GameLib.GetPlayerUnitByName(strSender) then
+				self.tTracked[strSender]['bOptOut'] = true
+			else
 				self.tTracked[strSender] = nil
 			end
 		-- the message was on LFRP, but it's not a query or a response
@@ -515,7 +541,7 @@ function LFRP:PopulateRoleplayerList()
 	aDist = {}
 	for strName,tUnitEntry in pairs(self.tTracked) do
 		-- only bother if it's a roleplayer
-		if tUnitEntry['bLFRP'] then
+		if tUnitEntry['bLFRP'] and not(tUnitEntry['bOptOut']) then
 			if GameLib.GetPlayerUnitByName(strName)then
 				--changed to get a fresh unit for distance update
 				table.insert(aDist, GameLib.GetPlayerUnitByName(strName))
