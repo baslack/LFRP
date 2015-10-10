@@ -25,7 +25,7 @@ kEnumLFRP_Response = 2
 kEnumLFRP_OptOut = 3
 kstrComm = '__LFRP__'
 
-local Major, Minor, Patch, Suffix = 1, 1, 1, 0
+local Major, Minor, Patch, Suffix = 1, 1, 2, 0
 local YOURADDON_CURRENT_VERSION = string.format("%d.%d.%d", Major, Minor, Patch)
  
 -----------------------------------------------------------------------------------------------
@@ -92,12 +92,26 @@ function LFRP:OnDocLoaded()
 			return
 		end
 		
+		self.wndChannels = Apollo.LoadForm(self.xmlDoc, "Channels", nil, self)
+		if self.wndChannels == nil then
+			Apollo.AddAddonErrorText(self, "Could not load the channel window for some reason.")
+			self.glog:fatal('LFRP: Could not load RP Channel Search List.')
+		else
+			self.wndChannels:Show(false)
+			wndChannelList = self.wndChannels:FindChild("ChannelList")
+			if self.strChannelList then
+				wndChannelList:SetText(self.strChannelList)
+			end
+			self.tRPChannelNames = self:ParseChannelNames(wndChannelList:GetText())
+		end
+		
 		-- item list
 		self.wndPlayerList = self.wndMain:FindChild("PlayerList")
 	    self.wndMain:Show(self.bShow)
 
 		Apollo.RegisterSlashCommand("lfrp", "ShowLFRP", self)
-		Apollo.RegisterSlashCommand("lfrp-init", "DoInit", self)
+		--Apollo.RegisterSlashCommand("lfrp-init", "DoInit", self)
+		Apollo.RegisterSlashCommand("lfrp-channels", "ShowChannelList", self)
 		
 		self.UpdateTimer = ApolloTimer.Create(3, true, "OnUpdateTimer", self)
 		self.UpdateTimer:Stop()
@@ -106,7 +120,7 @@ function LFRP:OnDocLoaded()
 		self.ThrottledTimer = ApolloTimer.Create(3, true, "OnThrottledTimer", self)
 		self.ThrottledTimer:Stop()
 		self.DelayedStart = ApolloTimer.Create(5, true, "OnDelayedStart", self)
-		self.PollingTimer = ApolloTimer.Create(10, true, "OnPollingTimer", self)
+		self.PollingTimer = ApolloTimer.Create(5, true, "OnPollingTimer", self)
 		self.ReEnableTimer = ApolloTimer.Create(1, true, "OnReEnableTimer", self)
 		self.ReEnableTimer:Stop()
 	end
@@ -123,6 +137,10 @@ end
 -----------------------------------------------------------------------------------------------
 -- LFRP Saved Settings
 -----------------------------------------------------------------------------------------------
+
+function LFRP:ShowChannelList()
+	self.wndChannels:Show(true)
+end
 
 function LFRP:DoInit()
 
@@ -145,6 +163,7 @@ function LFRP:OnSave(eLevel)
 	tSave['bShow'] = self.bShow
 	tSave['bLFRP'] = self.bLFRP
 	tSave['tLoc'] = self.wndMain:GetLocation():ToTable()
+	tSave['strChannelList'] = self.wndChannels:FindChild('ChannelList'):GetText()
 	return tSave
 end
 
@@ -156,6 +175,7 @@ function LFRP:OnRestore(eLevel, tData)
 		self.bShow = tData['bShow']
 		self.bLFRP = tData['bLFRP']
 		self.tLoc = tData['tLoc']
+		self.strChannelList = tData['strChannelList']
 	end
 end
 
@@ -175,6 +195,16 @@ end
 -- LFRP Functions
 -----------------------------------------------------------------------------------------------
 
+function LFRP:ParseChannelNames(strNames)
+	tNames = {}
+	strNames = string.lower(strNames)
+	pattern = '%a+;'
+	for name in string.gmatch(strNames, pattern) do
+		table.insert(tNames, string.sub(name, 1, (string.len(name) - 1)))
+	end
+	return tNames
+end
+
 function LFRP:SetupComms()
 	self.Comm = ICCommLib.JoinChannel(kstrComm, ICCommLib.CodeEnumICCommChannelType.Global)
 	self.Comm:SetJoinResultFunction("OnJoinResult", self)
@@ -193,14 +223,14 @@ function LFRP:OnJoinResult(channel, eResult)
 	local bTooMany = eResult == ICCommLib.CodeEnumICCommJoinResult.TooManyChannels
 	
 	if bJoin then
-		self.glog:debug(string.format('LFRP: Joined ICComm Channel "%s"', channel:GetName()))
+		--self.glog:debug(string.format('LFRP: Joined ICComm Channel "%s"', channel:GetName()))
 		if channel:IsReady() then
-			self.glog:debug('LFRP: Channel is ready to transmit')
+			--self.glog:debug('LFRP: Channel is ready to transmit')
 		else
-			self.glog:debug('LFRP: Channel is not ready to transmit')
+			--self.glog:debug('LFRP: Channel is not ready to transmit')
 		end
 	elseif bLeft then
-		self.glog:debug('LFRP: Left ICComm Channel')
+		--self.glog:debug('LFRP: Left ICComm Channel')
 	elseif bBadName then
 		self.glog:fatal('LFRP: Bad Channel Name')
 	elseif bMissing then
@@ -226,7 +256,7 @@ function LFRP:OnMessageSent(channel, eResult, idMessage)
 	if bSent then
 		--message was sent, remove it from the list
 		if self.tMsg[idMessage] ~= nil then
-			self.glog:debug(string.format('LFRP: Message Sent, Id# %d, Target: %s', idMessage, self.tMsg[idMessage]:GetName()))
+			--self.glog:debug(string.format('LFRP: Message Sent, Id# %d, Target: %s', idMessage, self.tMsg[idMessage]:GetName()))
 		end
 		self.tMsg[idMessage] = nil
 	elseif bInvalid then
@@ -256,7 +286,7 @@ function LFRP:OnMessageSent(channel, eResult, idMessage)
 		self.tMsg[idMessage] = nil
 	end
 	-- dump the contents of the event to debug just because
-	self.glog:debug(string.format('Message Sent Event Dump: %s, %s, %s', channel:GetName(), tostring(eResult), tostring(idMessage)))
+	--self.glog:debug(string.format('Message Sent Event Dump: %s, %s, %s', channel:GetName(), tostring(eResult), tostring(idMessage)))
 end
 
 function LFRP:OnMessageThrottled(channel, strSender, idMessage)
@@ -297,7 +327,7 @@ function LFRP:OnMessageReceived(channel, strMessage, strSender)
 		]]--
 		mType = tonumber(strMessage)
 		--dump them both to debug
-		self.glog:debug(string.format('LFRP: Received from %s, Message: %d', strSender, mType))
+		--self.glog:debug(string.format('LFRP: Received from %s, Message: %d', strSender, mType))
 		-- if the message was a query, send back a response to the sender
 		if mType == kEnumLFRP_Query then
 			-- if your LFRP flag is on, send the response
@@ -335,12 +365,12 @@ function LFRP:OnMessageReceived(channel, strMessage, strSender)
 		end
 	end
 	--dump to debug
-	self.glog:debug(string.format('LFRP: Message Received, %s %s %s', channel:GetName(), strMessage, strSender))
+	--self.glog:debug(string.format('LFRP: Message Received, %s %s %s', channel:GetName(), strMessage, strSender))
 end
 
 
 function LFRP:ShowLFRP()
-	self.glog:debug('LFRP:ShowLFRP')
+	--self.glog:debug('LFRP:ShowLFRP')
 	self:PopulateRoleplayerList()
 	self.bShow = true
 	self.UpdateTimer:Start()
@@ -388,12 +418,18 @@ function LFRP:OnChangeWorld()
 end
 
 function LFRP:PollRPChannels()
-	self.glog:debug("PollRPChannels: Ran.")
+	--self.glog:debug("PollRPChannels: Ran.")
 	local channels = ChatSystemLib.GetChannels()
 	local arInteresting_channels = {}
-	local pattern = '.*RP.*'
+	--local pattern = '.*RP.*'
 
-
+	--replaced old pattern with a function so that it can
+	--iterate over multiple names garnerd from the channel
+	--list window
+	function pattern(strName)
+		return '.*'..strName..'.*'
+	end
+	
 	--have to do this to hide the requests
 	--Get Members doesn't work without a request first
 	--disabling command channel display, temporarily
@@ -410,29 +446,32 @@ function LFRP:PollRPChannels()
 	-- add it to the interesting channels list
 	
 	for i,this_chan in ipairs(channels) do
-		self.glog:debug(string.format("PollRPChannels: Checking %s", this_chan:GetName()))
-		if string.find(this_chan:GetName(), pattern) then
-			self.glog:debug("PollRPChannels: RP Channel Found.")
-			table.insert(arInteresting_channels, this_chan)
+		--self.glog:debug(string.format("PollRPChannels: Checking %s", this_chan:GetName()))
+		for j,this_name in ipairs(self.tRPChannelNames) do
+			if string.find(string.lower(this_chan:GetName()), pattern(this_name)) then
+				--self.glog:debug("PollRPChannels: RP Channel Found.")
+				table.insert(arInteresting_channels, this_chan)
+			end
 		end
 	end
 	
 	-- for each channel in the interesting channels list
 	for i, this_chan in ipairs(arInteresting_channels) do
-		self.glog:debug(string.format('PollRPChannels: %s', this_chan:GetName()))
+		--self.glog:debug(string.format('PollRPChannels: %s', this_chan:GetName()))
 		-- poll for members
 		this_chan:RequestMembers()
 		local members = this_chan:GetMembers()
 		-- for each member
 		for j, this_member in ipairs(members) do
 			local strName = this_member['strMemberName']
-			self.glog:debug(string.format('PollRPChannels: %s', strName))
+			--self.glog:debug(string.format('PollRPChannels: %s', strName))
 			-- check to see if their unit exists in the players space
 			if (GameLib.GetPlayerUnitByName(strName) ~= nil) and (strName ~= GameLib.GetPlayerUnit():GetName()) then
 				--check to see if it's already tracked
 				--if it isn't, track it
-				self.glog:debug('PollRPChannels: Now tracking this character.')
+				--self.glog:debug('PollRPChannels: Now tracking this character.')
 				self.tTracked[strName] = {}
+				self.tTracked[strName]['strChannel'] = this_chan:GetName()
 				self.tTracked[strName]['bLFRP'] = true
 				self.tTracked[strName]['unit'] = GameLib.GetPlayerUnitByName(strName)
 			end
@@ -565,6 +604,10 @@ function LFRP:AddPlayerToList(unitAdded)
 	btnPlayer:SetData(unitAdded)
 	wndDist = btnPlayer:FindChild('Distance')
 	wndDist:SetText(string.format('%dm', self:DistanceToUnit(unitAdded)))
+	if self.tTracked[unitAdded:GetName()]['strChannel'] then
+		wndChannel = btnPlayer:FindChild('ChannelName')
+		wndChannel:SetText(string.format('(%s)', self.tTracked[unitAdded:GetName()]['strChannel']))
+	end
 end
 
 function LFRP:DestroyRoleplayerList()
@@ -578,8 +621,37 @@ end
 ---------------------------------------------------------------------------------------------------
 
 function LFRP:OnPlayerButton( wndHandler, wndControl, eMouseButton )
+	bLeft = eMouseButton == GameLib.CodeEnumInputMouse.Left
+	bMiddle = eMouseButton == GameLib.CodeEnumInputMouse.Middle
 	unit = wndControl:GetData()
-	unit:ShowHintArrow()
+	if  bLeft or bMiddle then
+		unit:ShowHintArrow()
+	else
+		ChatLog = Apollo.GetAddon("ChatLog")
+		for i, this_wnd in ipairs(ChatLog.tChatWindows) do
+			if this_wnd:IsVisible() then
+				input = this_wnd:FindChild('Input')
+				input:SetText(string.format('/w %s ', unit:GetName()))
+				ChatLog:OnInputChanged(input, input, input:GetText())
+				--input:SetFocus()
+				input:ClearFocus()
+				input:SetFocus()
+			end
+		end
+	end
+end
+
+---------------------------------------------------------------------------------------------------
+-- Channels Functions
+---------------------------------------------------------------------------------------------------
+
+function LFRP:OnCloseChannelList( wndHandler, wndControl, eMouseButton )
+	self.wndChannels:Show(false)
+end
+
+function LFRP:OnChannelListChanged( wndHandler, wndControl, strText )
+	--self.glog:debug(string.format('%s,', wndHandler:GetName(), wndControl:GetName(), strText))
+	self.tRPChannelNames = self:ParseChannelNames(wndHandler:GetText())
 end
 
 -----------------------------------------------------------------------------------------------
