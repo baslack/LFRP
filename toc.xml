@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<Addon Author="Scriptorium" APIVersion="11" Name="LFRP" Description="A &quot;Who&quot; styled addon for tracking roleplayers" Version="B-1.1.3">
+<Addon Author="Scriptorium" APIVersion="11" Name="LFRP" Description="A &quot;Who&quot; styled addon for tracking roleplayers" Version="R-1.1.3">
     <Script Name="LFRP.lua"/>
     <Form Name="LFRP.xml"/>
     <Script Name="GeminiLogging\GeminiLogging.lua"/>
