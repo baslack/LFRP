@@ -307,7 +307,7 @@ function LFRP:OnThrottledTimer()
 end
 
 function LFRP:SendQuery(unit)
-	self.glog:debug(string.format("Send Query: %s,", unit:GetName()))
+	--self.glog:debug(string.format("Send Query: %s,", unit:GetName()))
 	local iMsg = 0
 	if (unit ~= nil) and self.Comm:IsReady() then
 		iMsg = self.Comm:SendPrivateMessage(unit:GetName(), kEnumLFRP_Query)
