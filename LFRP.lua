@@ -65,7 +65,7 @@ function LFRP:OnLoad()
 	local GeminiLogging = Apollo.GetPackage("Gemini:Logging-1.2").tPackage
     
 	self.glog = GeminiLogging:GetLogger({
-		level = GeminiLogging.FATAL,
+		level = GeminiLogging.DEBUG,
 		pattern = "%d %n %c %l - %m",
 		appender = "GeminiConsole"
 	})
@@ -307,6 +307,7 @@ function LFRP:OnThrottledTimer()
 end
 
 function LFRP:SendQuery(unit)
+	self.glog:debug(string.format("Send Query: %s,", unit:GetName()))
 	local iMsg = 0
 	if (unit ~= nil) and self.Comm:IsReady() then
 		iMsg = self.Comm:SendPrivateMessage(unit:GetName(), kEnumLFRP_Query)
@@ -327,7 +328,7 @@ function LFRP:OnMessageReceived(channel, strMessage, strSender)
 		]]--
 		mType = tonumber(strMessage)
 		--dump them both to debug
-		--self.glog:debug(string.format('LFRP: Received from %s, Message: %d', strSender, mType))
+		self.glog:debug(string.format('LFRP: Received from %s, Message: %d', strSender, mType))
 		-- if the message was a query, send back a response to the sender
 		if mType == kEnumLFRP_Query then
 			-- if your LFRP flag is on, send the response
@@ -396,7 +397,7 @@ function LFRP:OnUnitCreated(unitCreated)
 			
 			--moving this out so that the early calling unit created events are dependent on ICComm being loaded
 			--self:SendQuery(unitCreated)
-			self.glog:info(string.format('LFRP: %s, UnitCreated', unitCreated:GetName()))
+			--self.glog:info(string.format('LFRP: %s, UnitCreated', unitCreated:GetName()))
 		end
 	end
 end
@@ -406,7 +407,7 @@ function LFRP:OnUnitDestroyed(unitDestroyed)
 		if unitDestroyed:GetName() == this_name then
 			self.tTracked[this_name] = nil
 			--self.bDirty = true
-			self.glog:info(string.format('LFRP: %s, UnitDestroyed', unitDestroyed:GetName()))
+			--self.glog:info(string.format('LFRP: %s, UnitDestroyed', unitDestroyed:GetName()))
 		end
 	end
 end
@@ -415,6 +416,23 @@ function LFRP:OnChangeWorld()
 	-- clear the tracked units
 	self.tTracked = {}
 	self.glog:info('LFRP: Changed World')
+end
+
+function LFRP:CommandId()
+	Killroy = Apollo.GetAddon("Killroy")
+
+	local channels = ChatSystemLib.GetChannels()
+	local chan_Command
+	for i, this_chan in ipairs(channels) do
+		if this_chan:GetName() == "Command" then
+			chan_Command = this_chan
+		end
+	end
+	if Killroy then
+		return chan_command:GetType()
+	else
+		return chan_Command:GetUniqueId()
+	end
 end
 
 function LFRP:PollRPChannels()
@@ -434,11 +452,12 @@ function LFRP:PollRPChannels()
 	--Get Members doesn't work without a request first
 	--disabling command channel display, temporarily
 	local ChatLog = Apollo.GetAddon("ChatLog")
+	
 	local bRestore = {}
 	for i, this_wnd in ipairs(ChatLog.tChatWindows) do
 		local tData = this_wnd:GetData()
-		bRestore[i] = tData.tViewedChannels[1]
-		tData.tViewedChannels[1] = false
+		bRestore[i] = tData.tViewedChannels[self:CommandId()]
+		tData.tViewedChannels[self:CommandId()] = false
 		this_wnd:SetData(tData)
 	end
 	
@@ -490,7 +509,7 @@ function LFRP:OnReEnableTimer()
 	ChatLog = Apollo.GetAddon("ChatLog")
 	for i, this_wnd in ipairs(ChatLog.tChatWindows) do
 		local tData = this_wnd:GetData()
-		tData.tViewedChannels[1] = self.bRestore[i]
+		tData.tViewedChannels[self:CommandId()] = self.bRestore[i]
 		this_wnd:SetData(tData)
 	end
 	self.ReEnableTimer:Stop()
