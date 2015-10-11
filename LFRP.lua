@@ -429,7 +429,7 @@ function LFRP:CommandId()
 		end
 	end
 	if Killroy then
-		return chan_command:GetType()
+		return chan_Command:GetType()
 	else
 		return chan_Command:GetUniqueId()
 	end
