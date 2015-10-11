@@ -502,6 +502,7 @@ function LFRP:PollRPChannels()
 				-- if not opted out, switch the bLFRP flag
 				elseif self.tTracked[strName]['bLFRP'] == false then
 					self.tTracked[strName]['bLFRP'] = true
+					self.tTracked[strName]['strChannel'] = this_chan:GetName()
 				end
 			end
 		end
