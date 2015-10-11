@@ -25,7 +25,7 @@ kEnumLFRP_Response = 2
 kEnumLFRP_OptOut = 3
 kstrComm = '__LFRP__'
 
-local Major, Minor, Patch, Suffix = 1, 1, 2, 0
+local Major, Minor, Patch, Suffix = 1, 1, 3, 0
 local YOURADDON_CURRENT_VERSION = string.format("%d.%d.%d", Major, Minor, Patch)
  
 -----------------------------------------------------------------------------------------------
@@ -256,7 +256,7 @@ function LFRP:OnMessageSent(channel, eResult, idMessage)
 	if bSent then
 		--message was sent, remove it from the list
 		if self.tMsg[idMessage] ~= nil then
-			--self.glog:debug(string.format('LFRP: Message Sent, Id# %d, Target: %s', idMessage, self.tMsg[idMessage]:GetName()))
+			self.glog:debug(string.format('LFRP: Message Sent, Id# %d, Target: %s', idMessage, self.tMsg[idMessage]:GetName()))
 		end
 		self.tMsg[idMessage] = nil
 	elseif bInvalid then
@@ -489,10 +489,20 @@ function LFRP:PollRPChannels()
 				--check to see if it's already tracked
 				--if it isn't, track it
 				--self.glog:debug('PollRPChannels: Now tracking this character.')
-				self.tTracked[strName] = {}
-				self.tTracked[strName]['strChannel'] = this_chan:GetName()
-				self.tTracked[strName]['bLFRP'] = true
-				self.tTracked[strName]['unit'] = GameLib.GetPlayerUnitByName(strName)
+				-- entry doesn't exist
+				if self.tTracked[strName] == nil then
+					self.tTracked[strName] = {}
+					self.tTracked[strName]['strChannel'] = this_chan:GetName()
+					self.tTracked[strName]['bLFRP'] = true
+					--self.tTracked[strName]['bQuerySent'] = true
+					self.tTracked[strName]['unit'] = GameLib.GetPlayerUnitByName(strName)
+				-- if opted out, do nothing
+				elseif self.tTracked[strName]['bOptOut'] then
+					--do nothing
+				-- if not opted out, switch the bLFRP flag
+				elseif self.tTracked[strName]['bLFRP'] == false then
+					self.tTracked[strName]['bLFRP'] = true
+				end
 			end
 		end
 	end
