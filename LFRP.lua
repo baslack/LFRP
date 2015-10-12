@@ -25,7 +25,7 @@ kEnumLFRP_Response = 2
 kEnumLFRP_OptOut = 3
 kstrComm = '__LFRP__'
 
-local Major, Minor, Patch, Suffix = 1, 1, 3, 0
+local Major, Minor, Patch, Suffix = 1, 1, 4, 0
 local YOURADDON_CURRENT_VERSION = string.format("%d.%d.%d", Major, Minor, Patch)
  
 -----------------------------------------------------------------------------------------------
@@ -69,6 +69,7 @@ function LFRP:OnLoad()
 		pattern = "%d %n %c %l - %m",
 		appender = "GeminiConsole"
 	})
+	self.bSuppressChatList = false
 	
 	-- load our form file
 	self.xmlDoc = XmlDoc.CreateFromFile("LFRP.xml")
@@ -121,8 +122,9 @@ function LFRP:OnDocLoaded()
 		self.ThrottledTimer:Stop()
 		self.DelayedStart = ApolloTimer.Create(5, true, "OnDelayedStart", self)
 		self.PollingTimer = ApolloTimer.Create(5, true, "OnPollingTimer", self)
-		self.ReEnableTimer = ApolloTimer.Create(1, true, "OnReEnableTimer", self)
-		self.ReEnableTimer:Stop()
+		--self.ReEnableTimer = ApolloTimer.Create(1, true, "OnReEnableTimer", self)
+		--self.ReEnableTimer:Stop()
+		self.ChangeChatLogTimer = ApolloTimer.Create(1, true, "OnChangeChatLogTimer", self)
 	end
 end
 
@@ -194,6 +196,55 @@ end
 -----------------------------------------------------------------------------------------------
 -- LFRP Functions
 -----------------------------------------------------------------------------------------------
+
+
+function LFRP:OnChangeChatLogTimer()
+	ChatLog = Apollo.GetAddon("ChatLog")
+	if ChatLog then
+		if self:Change_OnChatList() then
+			self.glog:debug("Change_OnChatList: suceeded")
+		else
+			self.glog:debug("Change_OnChatList: failed")
+		end
+		self.ChangeChatLogTimer:Stop()
+		return true
+	else
+		return nil
+	end
+end
+
+function LFRP:Change_OnChatList()
+	ChatLog = Apollo.GetAddon("ChatLog")
+	if ChatLog then
+		function ChatLog:OnChatList( channelSource )
+			LFRP = Apollo.GetAddon("LFRP")
+			if not LFRP then return nil end
+			
+			local tMembers = channelSource:GetMembers()
+			ChatSystemLib.PostOnChannel( ChatSystemLib.ChatChannel_Command, Apollo.GetString("ChatLog_MemberList"), ""  );
+			for idx = 1,#tMembers do
+				local strDesc = ""
+				if tMembers[idx].bIsChannelOwner then
+					strDesc = String_GetWeaselString(Apollo.GetString("ChatLog_ChannelOwner"), strDesc)
+				end
+				if tMembers[idx].bIsModerator then
+					strDesc = String_GetWeaselString(Apollo.GetString("ChatLog_ChannelModerator"), strDesc)
+				end
+				if tMembers[idx].bIsMuted then
+					strDesc = String_GetWeaselString(Apollo.GetString("ChatLog_Muted"), strDesc)
+				end
+				
+				if not LFRP.bSuppressChatList then
+					ChatSystemLib.PostOnChannel( ChatSystemLib.ChatChannel_Command, tMembers[idx].strMemberName .. strDesc, "" )
+				end
+			end
+			LFRP.bSuppressChatList = false
+		end
+		return true
+	else
+		return nil
+	end
+end
 
 function LFRP:ParseChannelNames(strNames)
 	tNames = {}
@@ -453,6 +504,7 @@ function LFRP:PollRPChannels()
 	--disabling command channel display, temporarily
 	local ChatLog = Apollo.GetAddon("ChatLog")
 	
+	--[[
 	local bRestore = {}
 	for i, this_wnd in ipairs(ChatLog.tChatWindows) do
 		local tData = this_wnd:GetData()
@@ -460,6 +512,7 @@ function LFRP:PollRPChannels()
 		tData.tViewedChannels[self:CommandId()] = false
 		this_wnd:SetData(tData)
 	end
+	]]--
 	
 	-- if a channel as "RP" in its name,
 	-- add it to the interesting channels list
@@ -478,6 +531,7 @@ function LFRP:PollRPChannels()
 	for i, this_chan in ipairs(arInteresting_channels) do
 		--self.glog:debug(string.format('PollRPChannels: %s', this_chan:GetName()))
 		-- poll for members
+		self.bSuppressChatList = true
 		this_chan:RequestMembers()
 		local members = this_chan:GetMembers()
 		-- for each member
@@ -508,12 +562,13 @@ function LFRP:PollRPChannels()
 		end
 	end
 	
-	return bRestore
+	--return bRestore
 end
 
 function LFRP:OnPollingTimer()
-	self.bRestore = self:PollRPChannels()
-	self.ReEnableTimer:Start()
+	self:PollRPChannels()
+	--self.bRestore = self:PollRPChannels()
+	--self.ReEnableTimer:Start()
 end
 
 function LFRP:OnReEnableTimer()
