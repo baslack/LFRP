@@ -122,8 +122,8 @@ function LFRP:OnDocLoaded()
 		self.ThrottledTimer:Stop()
 		self.DelayedStart = ApolloTimer.Create(5, true, "OnDelayedStart", self)
 		self.PollingTimer = ApolloTimer.Create(5, true, "OnPollingTimer", self)
-		--self.ReEnableTimer = ApolloTimer.Create(1, true, "OnReEnableTimer", self)
-		--self.ReEnableTimer:Stop()
+		self.ReEnableTimer = ApolloTimer.Create(1, true, "OnReEnableTimer", self)
+		self.ReEnableTimer:Stop()
 		self.ChangeChatLogTimer = ApolloTimer.Create(1, true, "OnChangeChatLogTimer", self)
 	end
 end
@@ -220,29 +220,35 @@ function LFRP:Change_OnChatList()
 			LFRP = Apollo.GetAddon("LFRP")
 			if not LFRP then return nil end
 			
+			strDump = string.format("%s,", tostring(LFRP.bSuppressChatList), channelSource:GetName())
+			LFRP.glog:debug(strDump)
+			
+			if not LFRP.bSuppressChatList then
 			local tMembers = channelSource:GetMembers()
 			ChatSystemLib.PostOnChannel( ChatSystemLib.ChatChannel_Command, Apollo.GetString("ChatLog_MemberList"), ""  );
-			for idx = 1,#tMembers do
-				local strDesc = ""
-				if tMembers[idx].bIsChannelOwner then
-					strDesc = String_GetWeaselString(Apollo.GetString("ChatLog_ChannelOwner"), strDesc)
+				for idx = 1,#tMembers do
+					local strDesc = ""
+					if tMembers[idx].bIsChannelOwner then
+						strDesc = String_GetWeaselString(Apollo.GetString("ChatLog_ChannelOwner"), strDesc)
+					end
+					if tMembers[idx].bIsModerator then
+						strDesc = String_GetWeaselString(Apollo.GetString("ChatLog_ChannelModerator"), strDesc)
+					end
+					if tMembers[idx].bIsMuted then
+						strDesc = String_GetWeaselString(Apollo.GetString("ChatLog_Muted"), strDesc)
+					end
+					
+					if not LFRP.bSuppressChatList then
+						ChatSystemLib.PostOnChannel( ChatSystemLib.ChatChannel_Command, tMembers[idx].strMemberName .. strDesc, "" )
+					end
 				end
-				if tMembers[idx].bIsModerator then
-					strDesc = String_GetWeaselString(Apollo.GetString("ChatLog_ChannelModerator"), strDesc)
-				end
-				if tMembers[idx].bIsMuted then
-					strDesc = String_GetWeaselString(Apollo.GetString("ChatLog_Muted"), strDesc)
-				end
-				
-				if not LFRP.bSuppressChatList then
-					ChatSystemLib.PostOnChannel( ChatSystemLib.ChatChannel_Command, tMembers[idx].strMemberName .. strDesc, "" )
-				end
+			else
+				return nil
 			end
-			LFRP.bSuppressChatList = false
 		end
 		return true
 	else
-		return nil
+		return false
 	end
 end
 
@@ -561,23 +567,25 @@ function LFRP:PollRPChannels()
 			end
 		end
 	end
-	
 	--return bRestore
 end
 
 function LFRP:OnPollingTimer()
 	self:PollRPChannels()
 	--self.bRestore = self:PollRPChannels()
-	--self.ReEnableTimer:Start()
+	self.ReEnableTimer:Start()
 end
 
 function LFRP:OnReEnableTimer()
+	--[[
 	ChatLog = Apollo.GetAddon("ChatLog")
 	for i, this_wnd in ipairs(ChatLog.tChatWindows) do
 		local tData = this_wnd:GetData()
 		tData.tViewedChannels[self:CommandId()] = self.bRestore[i]
 		this_wnd:SetData(tData)
 	end
+	]]--
+	self.bSuppressChatList = false
 	self.ReEnableTimer:Stop()
 end
 
