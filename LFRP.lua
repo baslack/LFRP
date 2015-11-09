@@ -25,7 +25,7 @@ kEnumLFRP_Response = 2
 kEnumLFRP_OptOut = 3
 kstrComm = '__LFRP__'
 
-local Major, Minor, Patch, Suffix = 1, 1, 4, 0
+local Major, Minor, Patch, Suffix = 1, 1, 5, 0
 local YOURADDON_CURRENT_VERSION = string.format("%d.%d.%d", Major, Minor, Patch)
  
 -----------------------------------------------------------------------------------------------
@@ -122,7 +122,7 @@ function LFRP:OnDocLoaded()
 		self.ThrottledTimer:Stop()
 		self.DelayedStart = ApolloTimer.Create(5, true, "OnDelayedStart", self)
 		self.PollingTimer = ApolloTimer.Create(5, true, "OnPollingTimer", self)
-		self.ReEnableTimer = ApolloTimer.Create(1, true, "OnReEnableTimer", self)
+		self.ReEnableTimer = ApolloTimer.Create(3, true, "OnReEnableTimer", self)
 		self.ReEnableTimer:Stop()
 		self.ChangeChatLogTimer = ApolloTimer.Create(1, true, "OnChangeChatLogTimer", self)
 	end
@@ -526,7 +526,7 @@ function LFRP:PollRPChannels()
 	for i,this_chan in ipairs(channels) do
 		--self.glog:debug(string.format("PollRPChannels: Checking %s", this_chan:GetName()))
 		for j,this_name in ipairs(self.tRPChannelNames) do
-			if string.find(string.lower(this_chan:GetName()), pattern(this_name)) then
+			if string.find(string.lower(this_chan:GetName()), pattern(this_name)) and (this_chan:GetType() == ChatSystemLib.ChatChannel_Custom) then
 				--self.glog:debug("PollRPChannels: RP Channel Found.")
 				table.insert(arInteresting_channels, this_chan)
 			end
